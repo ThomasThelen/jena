@@ -42,6 +42,10 @@ import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.sparql.ARQException;
+import org.apache.jena.assembler.BuildContext;
+import org.apache.jena.assembler.ConstructorGroup;
+import org.apache.jena.graph.Graph;
+import org.apache.jena.query.Dataset;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.util.Context;
 import org.apache.jena.sparql.util.MappingRegistry;
@@ -79,6 +83,13 @@ public class AssemblerUtils
         registerDataset(tDatasetTxnMem,   new InMemDatasetAssembler());
         registerDataset(tDatasetView,     new ViewDatasetAssembler());
         registerModel(tViewGraph,         new ViewGraphAssembler());
+
+        // Register in the new Constructor/BuildContext path.
+        ConstructorGroup cg = ConstructorGroup.global();
+        InMemDatasetConstructor inMem = new InMemDatasetConstructor();
+        cg.register(tMemoryDataset.asNode(),  inMem);
+        cg.register(tDatasetTxnMem.asNode(),  inMem);
+        cg.register(tDatasetView.asNode(),    new ViewDatasetConstructor());
     }
 
     private static Model modelExtras = ModelFactory.createDefaultModel();
@@ -192,6 +203,21 @@ public class AssemblerUtils
      * current directory. If it is a {@code file:} URI, a relative filename will be
      * relative to the assembler file and it's base URI.
      */
+    /**
+     * Build a {@link DatasetGraph} from a node in a graph, using the active
+     * {@link BuildContext} for deduplication. Handles both {@link Dataset} and
+     * {@link DatasetGraph} results from the constructor dispatch.
+     */
+    public static DatasetGraph buildDatasetGraph(BuildContext cxt, Graph graph, Node node) {
+        Object built = cxt.build(graph, node);
+        if ( built instanceof Dataset ds )
+            return ds.asDatasetGraph();
+        if ( built instanceof DatasetGraph dg )
+            return dg;
+        throw new org.apache.jena.shared.JenaException("Expected Dataset or DatasetGraph from assembler but got: "
+                + (built == null ? "null" : built.getClass().getName()));
+    }
+
     public static void loadData(DatasetGraph dataset, Resource root) {
       Txn.executeWrite(dataset, ()->{
           // Load data into the default graph

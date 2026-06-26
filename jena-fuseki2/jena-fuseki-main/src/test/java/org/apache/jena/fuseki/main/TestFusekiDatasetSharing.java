@@ -132,18 +132,18 @@ public class TestFusekiDatasetSharing {
         test(URL_ds_unnamed_1, URL_ds_unnamed_2, true); // Fuseki sharing.
     }
 
-    // Both base datasets are one step down -> no Fuseki sharing.
+    // Both views wrap :datasetNotNamed -> BuildContext shares the base DatasetGraph.
     @Test public void ds_5_sharing_view_unnamed_view_unnamed() {
-        test(URL_ds_view_unnamed_1, URL_ds_view_unnamed_2, false);
+        test(URL_ds_view_unnamed_1, URL_ds_view_unnamed_2, true);
     }
-    // One dataset is one step down -> no Fuseki sharing despite same resource ds-unnamed-1
+    // View wraps :datasetNotNamed, direct service also uses :datasetNotNamed -> shared via BuildContext.
     @Test public void ds_6_sharing_view_unnamed_unnamed() {
-        test(URL_ds_view_unnamed_1, URL_ds_unnamed_1, false);
+        test(URL_ds_view_unnamed_1, URL_ds_unnamed_1, true);
     }
 
-    // One dataset is one step down -> no Fuseki sharing despite same resource ds-unnamed-1
+    // Direct service writes to :datasetNotNamed, view reads through it -> shared via BuildContext.
     @Test public void ds_7_sharing_unnamed_view_unnamed() {
-        test(URL_ds_unnamed_1, URL_ds_view_unnamed_1, false);
+        test(URL_ds_unnamed_1, URL_ds_view_unnamed_1, true);
     }
 
     private static void test(String URL1, String URL2, boolean canSee) {

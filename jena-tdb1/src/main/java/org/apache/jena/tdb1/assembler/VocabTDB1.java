@@ -21,6 +21,7 @@
 
 package org.apache.jena.tdb1.assembler;
 
+import org.apache.jena.assembler.ConstructorGroup;
 import org.apache.jena.rdf.model.Property ;
 import org.apache.jena.rdf.model.Resource ;
 import org.apache.jena.sparql.core.assembler.AssemblerUtils ;
@@ -81,5 +82,8 @@ public class VocabTDB1
         AssemblerUtils.registerDataset(tDatasetTDB1,    new DatasetAssemblerTDB1());
         AssemblerUtils.registerModel(tGraphTDB,         new TDB1GraphAssembler());
         AssemblerUtils.registerModel(tGraphTDB1,        new TDB1GraphAssembler());
+        TDB1DatasetConstructor tdb1Ctor = new TDB1DatasetConstructor();
+        ConstructorGroup.global().register(tDatasetTDB.asNode(),  tdb1Ctor);
+        ConstructorGroup.global().register(tDatasetTDB1.asNode(), tdb1Ctor);
     }
 }

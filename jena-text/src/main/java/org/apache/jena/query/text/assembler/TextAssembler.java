@@ -22,6 +22,7 @@
 package org.apache.jena.query.text.assembler;
 
 import org.apache.jena.assembler.Assembler ;
+import org.apache.jena.assembler.ConstructorGroup;
 import org.apache.jena.sparql.core.assembler.AssemblerUtils ;
 
 public class TextAssembler
@@ -30,6 +31,7 @@ public class TextAssembler
     {
         AssemblerUtils.init() ;
         AssemblerUtils.registerDataset(TextVocab.textDataset,      new TextDatasetAssembler()) ;
+        ConstructorGroup.global().register(TextVocab.textDataset.asNode(), new TextDatasetConstructor());
         
         Assembler.general().implementWith(TextVocab.entityMap,        new EntityDefinitionAssembler()) ;
         Assembler.general().implementWith(TextVocab.textIndexLucene,  new TextIndexLuceneAssembler()) ;

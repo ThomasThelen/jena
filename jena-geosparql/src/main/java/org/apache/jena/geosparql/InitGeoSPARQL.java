@@ -22,9 +22,11 @@
 package org.apache.jena.geosparql;
 
 import org.apache.jena.assembler.Assembler;
+import org.apache.jena.assembler.ConstructorGroup;
 import org.apache.jena.atlas.logging.LogCtl;
 import org.apache.jena.atlas.logging.LogCtlJUL;
 import org.apache.jena.geosparql.assembler.GeoAssembler;
+import org.apache.jena.geosparql.assembler.GeoDatasetConstructor;
 import org.apache.jena.geosparql.assembler.VocabGeoSPARQL;
 import org.apache.jena.geosparql.configuration.GeoSPARQLConfig;
 import org.apache.jena.geosparql.implementation.datatype.GeometryDatatype;
@@ -68,6 +70,9 @@ public class InitGeoSPARQL implements JenaSubsystemLifecycle {
 
             AssemblerUtils.registerDataset(VocabGeoSPARQL.tGeoDataset,    assembler);
             AssemblerUtils.registerDataset(VocabGeoSPARQL.tGeoDatasetAlt, assembler);
+            GeoDatasetConstructor geoCtor = new GeoDatasetConstructor();
+            ConstructorGroup.global().register(VocabGeoSPARQL.tGeoDataset.asNode(),    geoCtor);
+            ConstructorGroup.global().register(VocabGeoSPARQL.tGeoDatasetAlt.asNode(), geoCtor);
             JenaSystem.logLifecycle("InitGeoSPARQL - finish");
         }
     }

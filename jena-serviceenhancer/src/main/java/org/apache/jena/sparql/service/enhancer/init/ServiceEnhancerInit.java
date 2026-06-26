@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.jena.assembler.Assembler;
+import org.apache.jena.assembler.ConstructorGroup;
 import org.apache.jena.assembler.assemblers.AssemblerGroup;
 import org.apache.jena.atlas.lib.Pair;
 import org.apache.jena.graph.Node;
@@ -63,6 +64,7 @@ import org.apache.jena.sparql.service.ServiceExecutorRegistry;
 import org.apache.jena.sparql.service.enhancer.algebra.TransformSE_EffectiveOptions;
 import org.apache.jena.sparql.service.enhancer.algebra.TransformSE_JoinStrategy;
 import org.apache.jena.sparql.service.enhancer.assembler.DatasetAssemblerServiceEnhancer;
+import org.apache.jena.sparql.service.enhancer.assembler.ServiceEnhancerDatasetConstructor;
 import org.apache.jena.sparql.service.enhancer.assembler.ServiceEnhancerVocab;
 import org.apache.jena.sparql.service.enhancer.function.cacheRm;
 import org.apache.jena.sparql.service.enhancer.impl.ChainingServiceExecutorBulkServiceEnhancer;
@@ -201,6 +203,7 @@ public class ServiceEnhancerInit
     static void registerWith(AssemblerGroup g)
     {
         AssemblerUtils.register(g, ServiceEnhancerVocab.DatasetServiceEnhancer, new DatasetAssemblerServiceEnhancer(), DatasetAssembler.getGeneralType());
+        ConstructorGroup.global().register(ServiceEnhancerVocab.DatasetServiceEnhancer.asNode(), new ServiceEnhancerDatasetConstructor());
 
         // Note: We can't install the plugin on graphs because they don't have a context
     }

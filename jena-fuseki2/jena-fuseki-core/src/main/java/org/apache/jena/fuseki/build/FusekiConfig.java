@@ -40,6 +40,7 @@ import java.util.*;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.assembler.Assembler;
+import org.apache.jena.assembler.BuildContext;
 import org.apache.jena.assembler.JA;
 import org.apache.jena.atlas.lib.IRILib;
 import org.apache.jena.atlas.lib.Pair;
@@ -318,24 +319,26 @@ public class FusekiConfig {
     private static List<DataAccessPoint> servicesAndDatasets$(Graph configuration, Node server) {
         DatasetDescriptionMap dsDescMap = new DatasetDescriptionMap();
         NamedDatasetAssembler.sharedDatasetPool.clear();
-        // ---- Services
-        // Server to services.
-        RowSet rs = BuildLib.query("SELECT * { ?s fu:services [ list:member ?service ] }", configuration, "s", server);
-
-        // If none, look for services by type.
-        if ( ! rs.hasNext() )
-            // No "fu:services ( .... )" so try looking for services directly.
-            // This means Fuseki2, service configuration files (no server section) work for --conf.
-            rs = BuildLib.query("SELECT ?service { ?service a fu:Service }", configuration);
-
-        List<Node> services = rs.stream().map(b->b.get("service")).toList();
+        BuildContext cxt = BuildContext.create();
+        List<Node> services = findServiceNodes(configuration, server);
         List<DataAccessPoint> accessPoints = new ArrayList<>();
         for (Node svc : services ) {
-            DataAccessPoint acc = buildDataAccessPoint(configuration, svc, dsDescMap);
+            DataAccessPoint acc = buildDataAccessPoint(configuration, svc, dsDescMap, cxt);
             if ( acc != null )
                 accessPoints.add(acc);
         }
         return accessPoints;
+    }
+
+    private static List<Node> findServiceNodes(Graph configuration, Node server) {
+        // Server to services.
+        RowSet rs = BuildLib.query("SELECT * { ?s fu:services [ list:member ?service ] }", configuration, "s", server);
+        if ( rs.hasNext() )
+            return rs.stream().map(b -> b.get("service")).toList();
+        // No "fu:services ( .... )" so try looking for services directly.
+        // This means Fuseki2, service configuration files (no server section) work for --conf.
+        return BuildLib.query("SELECT ?service { ?service a fu:Service }", configuration)
+                       .stream().map(b -> b.get("service")).toList();
     }
 
     private static void loadAndInit(String className) {
@@ -420,6 +423,10 @@ public class FusekiConfig {
 
     /** Build a DataAccessPoint, including DataService, from the description at Resource svc */
     public static DataAccessPoint buildDataAccessPoint(Graph configuration, Node fusekiService, DatasetDescriptionMap dsDescMap) {
+        return buildDataAccessPoint(configuration, fusekiService, dsDescMap, BuildContext.create());
+    }
+
+    private static DataAccessPoint buildDataAccessPoint(Graph configuration, Node fusekiService, DatasetDescriptionMap dsDescMap, BuildContext cxt) {
         Node n = BuildLib.getOne(configuration, fusekiService, FusekiVocabG.pServiceName);
         try {
             if ( ! n.isLiteral() )
@@ -430,7 +437,7 @@ public class FusekiConfig {
             String name = n.getLiteralLexicalForm();
             name = DataAccessPoint.canonical(name);
             AuthPolicy allowedUsers = allowedUsers(configuration, fusekiService);
-            DataService dataService = buildDataService(configuration, fusekiService, dsDescMap).setAuthPolicy(allowedUsers).build();
+            DataService dataService = buildDataService(configuration, fusekiService, dsDescMap, cxt).setAuthPolicy(allowedUsers).build();
             DataAccessPoint dataAccess = new DataAccessPoint(name, dataService);
             return dataAccess;
         } catch (FusekiException ex) {
@@ -441,8 +448,12 @@ public class FusekiConfig {
     }
 
     private static DataService.Builder buildDataService(Graph configuration, Node fusekiService, DatasetDescriptionMap dsDescMap) {
+        return buildDataService(configuration, fusekiService, dsDescMap, BuildContext.create());
+    }
+
+    private static DataService.Builder buildDataService(Graph configuration, Node fusekiService, DatasetDescriptionMap dsDescMap, BuildContext cxt) {
         Node datasetDesc = BuildLib.getOne(configuration, fusekiService, FusekiVocabG.pDataset);
-        DatasetGraph dsg = getDataset(configuration, datasetDesc, dsDescMap);
+        DatasetGraph dsg = getDataset(configuration, datasetDesc, dsDescMap, cxt);
         DataService.Builder dataService = DataService.newBuilder(dsg);
         Set<Endpoint> endpoints1 = new HashSet<>();
         Set<Endpoint> endpoints2 = new HashSet<>();
@@ -669,28 +680,29 @@ public class FusekiConfig {
     }
 
     public static DatasetGraph getDataset(Graph configuration, Node datasetDesc, DatasetDescriptionMap dsDescMap) {
-        // check if this one already built
-        // This is absolute and does not require a NamedDatasetAssembler and to have a ja:name.
-        // ja:name/NamedDatasetAssembler must be used if the service datasets need to
-        // wire up sharing of a graph of datasets (not TDB).
+        return getDataset(configuration, datasetDesc, dsDescMap, BuildContext.create());
+    }
 
+    private static DatasetGraph getDataset(Graph configuration, Node datasetDesc, DatasetDescriptionMap dsDescMap, BuildContext cxt) {
         DatasetGraph dsg = dsDescMap.get(datasetDesc);
         if ( dsg != null )
             return dsg;
 
-        // Not seen before.
-        // Check if the description is in the model.
         if ( ! G.hasProperty(configuration, datasetDesc, RDF.Nodes.type) )
             throw new FusekiConfigException("No rdf:type for dataset " + displayStr(configuration, datasetDesc));
 
-        // Should have been done already. e.g. ActionDatasets.execPostContainer,
-        //AssemblerUtils.addRegistered(datasetDesc.getModel());
-
-        Resource r = resource(configuration, datasetDesc);
-        Dataset ds = (Dataset)Assembler.general().open(r);
-        if ( ds == null )
+        // Dispatch through the new Constructor/ConstructorGroup path.
+        // Known types are handled by registered Constructor<DatasetGraph> implementations;
+        // unknown types fall back to Assembler.general() via ConstructorGroup.legacyFallback().
+        Object built = cxt.build(configuration, datasetDesc);
+        if ( built == null )
             throw new FusekiConfigException("Bad description of a dataset: " + displayStr(configuration, datasetDesc));
-        dsg = ds.asDatasetGraph();
+        if ( built instanceof Dataset ds )
+            dsg = ds.asDatasetGraph();
+        else if ( built instanceof DatasetGraph dg )
+            dsg = dg;
+        else
+            throw new FusekiConfigException("Unexpected result type assembling dataset " + displayStr(configuration, datasetDesc) + ": " + built.getClass());
         dsDescMap.register(datasetDesc, dsg);
         return dsg;
     }

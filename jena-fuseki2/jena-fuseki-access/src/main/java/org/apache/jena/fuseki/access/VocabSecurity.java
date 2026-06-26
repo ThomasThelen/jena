@@ -21,6 +21,7 @@
 
 package org.apache.jena.fuseki.access;
 
+import org.apache.jena.assembler.ConstructorGroup;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.sparql.core.assembler.AssemblerUtils;
@@ -54,5 +55,6 @@ public class VocabSecurity {
         // AssemblerUtils.subProperty
         AssemblerUtils.registerDataset(tAccessControlledDataset, new AssemblerAccessDataset());
         AssemblerUtils.registerModel(tSecurityRegistry, new AssemblerSecurityRegistry());
+        ConstructorGroup.global().register(tAccessControlledDataset.asNode(), new AccessDatasetConstructor());
     }
 }

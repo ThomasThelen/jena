@@ -52,7 +52,7 @@ PREFIX ja:      <http://jena.hpl.hp.com/2005/11/Assembler#>
     fuseki:dataset :datasetNotNamed ;
     .
 
-# View dataset, base not named
+# View dataset, base not named — shares :datasetNotNamed with service3/service4 via BuildContext
 :service5 rdf:type fuseki:Service ;
     fuseki:name "ds-view-base-unnamed-1" ;
     fuseki:endpoint [ fuseki:operation fuseki:query ; ] ;
@@ -61,7 +61,7 @@ PREFIX ja:      <http://jena.hpl.hp.com/2005/11/Assembler#>
     fuseki:dataset :datasetView1 ;
     .
 
-# View dataset, base not named
+# View dataset, base not named — shares :datasetNotNamed with service3/service4 via BuildContext
 :service6 rdf:type fuseki:Service ;
     fuseki:name "ds-view-base-unnamed-2" ;
     fuseki:endpoint [ fuseki:operation fuseki:query ; ] ;
@@ -81,14 +81,12 @@ PREFIX ja:      <http://jena.hpl.hp.com/2005/11/Assembler#>
     ja:name "DATABASE";
     .
 
-# Layer of dataset
-## Avoids the fact that Fuseki service datasets with teh same resource are always changes.
+# View wrapping :datasetNotNamed — base is shared via BuildContext URI cache.
 :datasetView1 rdf:type ja:ViewDataset ;
     ja:dataset :datasetNotNamed ;
     .
 
-# Layer of dataset
-## Avoids the fact that Fuseki service datasets with teh same resource are always changes.
+# View wrapping :datasetNotNamed — base is shared via BuildContext URI cache.
 :datasetView2 rdf:type ja:ViewDataset ;
     ja:dataset :datasetNotNamed ;
     .

@@ -24,6 +24,7 @@ package org.apache.jena.sparql.core.assembler ;
 import static org.apache.jena.sparql.util.graph.GraphUtils.getResourceValue;
 
 import org.apache.jena.assembler.Assembler ;
+import org.apache.jena.assembler.BuildContext;
 import org.apache.jena.assembler.Mode ;
 import org.apache.jena.assembler.assemblers.AssemblerBase ;
 import org.apache.jena.assembler.exceptions.AssemblerException;
@@ -40,10 +41,20 @@ public abstract class DatasetAssembler extends AssemblerBase implements Assemble
         return DatasetAssemblerVocab.tDataset ;
     }
 
+    /**
+     * When called via the new {@link org.apache.jena.assembler.ConstructorGroup} path,
+     * {@link org.apache.jena.assembler.BuildContext#current()} returns the active
+     * build context (bridged from the caller). URI resources are cached so that
+     * multiple services referencing the same dataset resource share one instance.
+     */
     @Override
     public Dataset open(Assembler a, Resource root, Mode mode) {
-        DatasetGraph dsg = createNamedDataset(a, root) ;
-        return DatasetFactory.wrap(dsg);
+        BuildContext context = BuildContext.current();
+        if ( context != null && root.isURIResource() && mode.permitUseExisting(root, root.getURI()) ) {
+            DatasetGraph dsg = context.computeIfAbsent(root.asNode(), () -> createNamedDataset(a, root));
+            return DatasetFactory.wrap(dsg);
+        }
+        return DatasetFactory.wrap(createNamedDataset(a, root));
     }
 
     /**

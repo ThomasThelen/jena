@@ -23,6 +23,7 @@ package org.apache.jena.tdb2.assembler;
 
 
 import org.apache.jena.assembler.Assembler;
+import org.apache.jena.assembler.ConstructorGroup;
 import org.apache.jena.assembler.assemblers.AssemblerGroup;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
@@ -90,5 +91,8 @@ public class VocabTDB2
         AssemblerUtils.registerDataset(tDatasetTDB2, new DatasetAssemblerTDB2());
         AssemblerUtils.registerModel(tGraphTDB,      new TDB2GraphAssembler());
         AssemblerUtils.registerModel(tGraphTDB2,     new TDB2GraphAssembler());
+        TDB2DatasetConstructor tdb2Ctor = new TDB2DatasetConstructor();
+        ConstructorGroup.global().register(tDatasetTDB.asNode(),  tdb2Ctor);
+        ConstructorGroup.global().register(tDatasetTDB2.asNode(), tdb2Ctor);
     }
 }

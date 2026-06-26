@@ -22,6 +22,7 @@
 package org.apache.jena.rdfs.assembler;
 
 import org.apache.jena.assembler.Assembler;
+import org.apache.jena.assembler.ConstructorGroup;
 import org.apache.jena.assembler.JA;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
@@ -57,6 +58,7 @@ public class VocabRDFS {
         Assembler a = new GraphRDFSAssembler();
         AssemblerUtils.registerModel(tGraphRDFS, a);
         AssemblerUtils.registerModel(tModelRDFS, a);
+        ConstructorGroup.global().register(tDatasetRDFS.asNode(), new DatasetRDFSConstructor());
     }
 
     private static Resource resource(String localname) { return ResourceFactory.createResource(iri(localname)); }
