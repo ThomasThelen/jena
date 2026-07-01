@@ -21,6 +21,8 @@
 
 package org.apache.jena.sparql.engine.iterator;
 
+import java.util.Map ;
+
 import org.apache.jena.atlas.io.IndentedWriter ;
 import org.apache.jena.atlas.lib.Lib ;
 import org.apache.jena.graph.Node ;
@@ -33,6 +35,9 @@ import org.apache.jena.sparql.engine.QueryIterator ;
 import org.apache.jena.sparql.engine.binding.Binding ;
 import org.apache.jena.sparql.engine.binding.BindingBuilder;
 import org.apache.jena.sparql.expr.Expr ;
+import org.apache.jena.sparql.expr.ExprEvalException ;
+import org.apache.jena.sparql.expr.NodeValue ;
+import org.apache.jena.sparql.function.scripting.ScriptDenyException ;
 import org.apache.jena.sparql.serializer.SerializationContext ;
 
 /** Extend each solution by a (var, expression) */
@@ -59,10 +64,11 @@ public class QueryIterAssign extends QueryIterProcessBinding
     @Override
     public Binding accept(Binding binding) {
         BindingBuilder b = Binding.builder(binding);
-        for ( Var v : exprs.getVars() ) {
+        for ( Map.Entry<Var, Expr> entry : exprs.getExprs().entrySet() ) {
+            Var v = entry.getKey();
             // if "binding", not "b" used, we get (Lisp) "let"
             // semantics, not the desired "let*" semantics
-            Node n = exprs.get(v, b.snapshot(), getExecContext());
+            Node n = evalExpr(entry.getValue(), b.snapshot());
 
             if ( n == null )
                 // Expression failed to evaluate - no assignment
@@ -88,6 +94,17 @@ public class QueryIterAssign extends QueryIterProcessBinding
             }
         }
         return b.build() ;
+    }
+
+    private Node evalExpr(Expr expr, Binding binding) {
+        try {
+            NodeValue nv = expr.eval(binding, getExecContext());
+            return nv == null ? null : nv.asNode();
+        } catch ( ScriptDenyException ex ) {
+            throw ex;
+        } catch ( ExprEvalException ex ) {
+            return null;
+        }
     }
 
     @Override
