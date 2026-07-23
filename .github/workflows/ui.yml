@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+# Disable Corepack's interactive prompt so the first "yarn" download does not block CI.
+env:
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+
 jobs:
   # Unit tests, faster, only run on GH for the ASF repository.
   unit-test-and-build:
@@ -34,6 +38,9 @@ jobs:
         with:
           working-directory: jena-fuseki2/jena-fuseki-ui
           node-version: 'lts/*'
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Set up JDK ${{ matrix.java_version }}
         uses: actions/setup-java@v5
@@ -76,6 +83,9 @@ jobs:
         with:
           working-directory: jena-fuseki2/jena-fuseki-ui
           node-version: 'lts/*'
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Test (E2E)
         uses: cypress-io/github-action@v7.4.0

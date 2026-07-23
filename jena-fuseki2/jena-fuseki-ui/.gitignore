@@ -4,6 +4,15 @@ node_modules
 /coverage
 .nyc_output/**
 
+# Yarn artifacts
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+
 /tests/e2e/videos/
 /tests/e2e/screenshots/
 
